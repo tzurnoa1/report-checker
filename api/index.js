@@ -20,14 +20,12 @@ export default async function handler(req, res) {
 23 - הנך מגלה מוטיבציה ורצון להתקדם בלימודים.
 24 - שקדת על עבודתך ועבדת ברצינות מתוך אחריות ובגרות.
 25 - גילית אחריות ללמידה, מוטיבציה ורצון להתקדם.
-26 - אתה תלמיד רציני, מגלה עניין והבנה ובעל מוטיבציה להצלחה.
-28 - אתה ראוי להערכה רבה על מאמציך הלימודיים. תרומתך לשיעורים מבורכת.
+28 - אתה ראוי להערכה רבה על מאמציך הלימודיים.
 32 - גילית ידע רב והפגנת שליטה מלאה בנושאים שנלמדו.
 33 - אתה מגלה עניין במקצוע, ועושה כמיטב יכולתך. [70-79]
 
 הערות לשיפור (לציונים מתחת ל-70):
 57 - עליך להקפיד להגיע לשיעורים ולהגיש את המטלות.
-59 - מעורבות בשיעורים, הגשת כל המטלות והשקעת מאמצים לימודיים יקדמו אותך.
 68 - עליך לגלות אחריות על למידתך, להגיע בזמן ולבצע משימות באופן עקבי.
 80 - עליך לגלות יותר מוטיבציה ואחריות ללמידה.
 87 - התנהגותך בשיעורים וחוסר הריכוז פגעו בהישגיך.
@@ -93,16 +91,16 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f4f8;min-height:100vh
 h1{font-size:1.8rem;color:#2b6cb0;margin-bottom:4px}
 .header p{color:#718096;font-size:.9rem}
 .section{background:white;border-radius:14px;box-shadow:0 2px 10px rgba(0,0,0,.07);padding:20px;margin-bottom:16px}
-.upload-area{border:2.5px dashed #90cdf4;border-radius:12px;padding:40px 20px;text-align:center;cursor:pointer;transition:all .2s;background:#f7fafc}
-.upload-area:hover,.drag-over{border-color:#3182ce;background:#ebf8ff}
+.upload-area{border:2.5px dashed #90cdf4;border-radius:12px;padding:40px 20px;text-align:center;cursor:pointer;background:#f7fafc}
 .upload-icon{font-size:2.8rem;margin-bottom:8px}
 .upload-area h3{color:#2d3748;margin-bottom:4px}
 .upload-area p{color:#a0aec0;font-size:.85rem}
-#fileInput{display:none}
-.badge{display:none;background:#ebf8ff;border:1px solid #bee3f8;border-radius:8px;padding:8px 14px;color:#2b6cb0;font-size:.88rem;margin-top:10px}
-.btn{width:100%;padding:14px;border-radius:10px;border:none;cursor:pointer;font-size:1rem;font-weight:700;font-family:inherit;background:linear-gradient(135deg,#3182ce,#2b6cb0);color:white;transition:all .2s;margin-top:4px}
-.btn:hover:not(:disabled){box-shadow:0 4px 14px rgba(49,130,206,.4);transform:translateY(-1px)}
-.btn:disabled{background:#e2e8f0;color:#a0aec0;cursor:not-allowed;transform:none}
+#fi{display:none}
+.badge{display:none;border-radius:8px;padding:8px 14px;font-size:.88rem;margin-top:10px}
+.badge.ok{background:#ebf8ff;border:1px solid #bee3f8;color:#2b6cb0}
+.badge.bad{background:#fff5f5;border:1px solid #fed7d7;color:#c53030}
+.btn{width:100%;padding:14px;border-radius:10px;border:none;cursor:pointer;font-size:1rem;font-weight:700;font-family:inherit;background:linear-gradient(135deg,#3182ce,#2b6cb0);color:white;margin-top:4px}
+.btn:disabled{background:#e2e8f0;color:#a0aec0;cursor:not-allowed}
 .prog{display:none;margin-top:14px}
 .prog-bg{background:#e2e8f0;border-radius:8px;height:10px;overflow:hidden}
 .prog-bar{height:100%;background:linear-gradient(90deg,#3182ce,#63b3ed);border-radius:8px;transition:width .4s;width:0%}
@@ -160,9 +158,9 @@ h1{font-size:1.8rem;color:#2b6cb0;margin-bottom:4px}
 <script>
 let rows=[];
 const dz=document.getElementById('dz');
-dz.addEventListener('dragover',e=>{e.preventDefault();dz.classList.add('drag-over')});
-dz.addEventListener('dragleave',()=>dz.classList.remove('drag-over'));
-dz.addEventListener('drop',e=>{e.preventDefault();dz.classList.remove('drag-over');go(e.dataTransfer.files)});
+dz.addEventListener('dragover',e=>{e.preventDefault();dz.style.background='#ebf8ff'});
+dz.addEventListener('dragleave',()=>{dz.style.background=''});
+dz.addEventListener('drop',e=>{e.preventDefault();dz.style.background='';go(e.dataTransfer.files)});
 document.getElementById('fi').addEventListener('change',e=>go(e.target.files));
 
 async function go(files){
@@ -174,50 +172,79 @@ async function go(files){
     try{
       const ab=await f.arrayBuffer();
       const r=await mammoth.convertToHtml({arrayBuffer:ab});
-      rows.push(...parse(r.value,f.name));
-    }catch(e){setErr('שגיאה: '+e.message);return}
+      const parsed=parse(r.value,f.name);
+      rows.push(...parsed);
+    }catch(e){setErr('שגיאה בקריאת הקובץ: '+e.message);return}
   }
   const badge=document.getElementById('badge');
+  badge.style.display='block';
   if(rows.length>0){
-    badge.style.display='block';
-    const st=new Set(rows.map(r=>r.s).filter(Boolean)).size;
-    badge.textContent='📎 '+names.join(', ')+' | '+rows.length+' מקצועות | '+(st||'?')+' תלמידים';
+    badge.className='badge ok';
+    const st=new Set(rows.map(r=>r.studentName).filter(Boolean)).size;
+    badge.textContent='✅ נטען בהצלחה: '+rows.length+' מקצועות, '+(st||'?')+' תלמידים';
     document.getElementById('btn').disabled=false;
   }else{
-    badge.style.display='block';
-    badge.textContent='לא נמצאו ציונים בקובץ';
-    badge.style.background='#fff5f5';badge.style.color='#c53030';
+    badge.className='badge bad';
+    badge.textContent='⚠️ לא נמצאו ציונים בקובץ. ודאי שזה קובץ תעודה תקין (.docx)';
     document.getElementById('btn').disabled=true;
   }
 }
 
 function parse(html,fn){
-  const d=document.createElement('div');d.innerHTML=html;
+  const d=document.createElement('div');
+  d.innerHTML=html;
   const out=[];
-  for(const t of d.querySelectorAll('table')){
-    const tr=t.querySelectorAll('tr');
-    if(tr.length<3)continue;
-    if(!tr[0].textContent.includes('מקצוע')&&!tr[0].textContent.includes('ציון'))continue;
+  const tables=d.querySelectorAll('table');
+  
+  for(const t of tables){
+    const tr=Array.from(t.querySelectorAll('tr'));
+    if(tr.length<2)continue;
+    
+    // Check if this looks like a grades table
+    const headerText=tr[0].textContent;
+    if(!headerText.includes('מקצוע')&&!headerText.includes('ציון')&&!headerText.includes('הערכה'))continue;
+    
+    // Find student name before this table
     let sn='';
-    let p=t.previousElementSibling;
-    while(p){
-      const tx=p.textContent;
+    let prev=t.previousElementSibling;
+    for(let k=0;k<10&&prev;k++){
+      const tx=prev.textContent||'';
       if(tx.includes('שם התלמיד')){
-        sn=tx.replace(/שם התלמידה?[\\s:]*/,'').replace(/מס[׳'][\\s\\S]*/,'').replace(/כיתה[\\s\\S]*/,'').trim();
+        sn=tx.replace(/שם התלמידה?\s*[:：]?\s*/,'')
+           .replace(/\s*מס['׳ ]\s*זהות[\s\S]*/,'')
+           .replace(/\s*כיתה[\s\S]*/,'')
+           .trim();
         break;
       }
-      p=p.previousElementSibling;
+      prev=prev.previousElementSibling;
     }
+    
     for(let i=1;i<tr.length;i++){
-      const c=tr[i].querySelectorAll('td');
-      if(c.length<4)continue;
-      const sub=c[0].textContent.trim().replace(/\\s+/g,'');
-      const tch=c[1]?.textContent.trim().replace(/\\s+/g,' ')||'';
-      const com=c[2]?.textContent.trim().replace(/\\s+/g,' ')||'';
-      const gr=parseInt(c[3]?.textContent.trim()||'');
-      if(!sub||!com||com.length<4||isNaN(gr)||gr<1||gr>100)continue;
-      if(sub.includes('מקצוע'))continue;
-      out.push({subject:sub,teacher:tch,comment:com,grade:gr,studentName:sn,fileName:fn});
+      const cells=Array.from(tr[i].querySelectorAll('td,th'));
+      if(cells.length<4)continue;
+      
+      const col0=cells[0].textContent.trim().replace(/\s+/g,' ');
+      const col1=cells[1].textContent.trim().replace(/\s+/g,' ');
+      const col2=cells[2].textContent.trim().replace(/\s+/g,' ');
+      const col3=cells[3].textContent.trim();
+      
+      // col3 should be the grade (number)
+      const grade=parseInt(col3);
+      if(isNaN(grade)||grade<1||grade>100)continue;
+      
+      // col0 is subject, col2 is comment
+      if(!col0||col0.length<1)continue;
+      if(!col2||col2.length<3)continue;
+      if(col0.includes('מקצוע')||col0.includes('שם'))continue;
+      
+      out.push({
+        subject:col0.replace(/\s+/g,''),
+        teacher:col1,
+        comment:col2,
+        grade:grade,
+        studentName:sn,
+        fileName:fn
+      });
     }
   }
   return out;
@@ -236,9 +263,9 @@ async function run(){
     document.getElementById('pb').style.width=Math.round(b/bats.length*100)+'%';
     try{
       const r=await fetch('/api/index',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({rows:bats[b]})});
-      const d=await r.json();
-      if(d.error)throw new Error(d.error);
-      d.results.forEach((r,i)=>{
+      const data=await r.json();
+      if(data.error)throw new Error(data.error);
+      data.results.forEach((r,i)=>{
         const o=bats[b][i];
         all.push({...r,subject:o.subject,grade:o.grade,comment:o.comment,teacher:o.teacher,studentName:o.studentName});
       });
@@ -278,10 +305,10 @@ function filt(f,btn){
 
 function csv(all){
   if(!all)return;
-  const B='\\uFEFF',h=['תלמיד','מקצוע','מורה','ציון','הערה','תקין?','בעיה','הצעות'].join(',');
+  const BOM='\uFEFF',h=['תלמיד','מקצוע','מורה','ציון','הערה','תקין?','בעיה','הצעות'].join(',');
   const r=all.map(r=>[r.studentName||'',r.subject||'',r.teacher||'',r.grade,'"'+r.comment.replace(/"/g,'""')+'"',r.isMatch?'כן':'לא','"'+(r.issue||'').replace(/"/g,'""')+'"','"'+(r.suggestions||[]).join(' | ').replace(/"/g,'""')+'"'].join(','));
   const a=document.createElement('a');
-  a.href=URL.createObjectURL(new Blob([B+h+'\\n'+r.join('\\n')],{type:'text/csv;charset=utf-8'}));
+  a.href=URL.createObjectURL(new Blob([BOM+h+'\n'+r.join('\n')],{type:'text/csv;charset=utf-8'}));
   a.download='דוח_תעודות.csv';a.click();
 }
 <\/script>
